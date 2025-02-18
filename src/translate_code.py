@@ -15,16 +15,46 @@ def translate_code(migration_plan_text, target_language):
     migration_plan = json.loads(migration_plan_text)
     project_structure = migration_plan["projectStructure"]
     code_conversion = migration_plan["codeConversion"]
+    source_language = migration_plan.get("sourceLanguage", "Unknown")
 
-    # Create package.json with dependencies
+    # Create appropriate dependency file based on target language
     root_dir = project_structure["root"].lstrip("/")
-    package_json = {
-        "name": root_dir,
-        "version": "1.0.0",
-        "dependencies": {dep: "*" for dep in migration_plan["dependencies"]},
+    dependency_files = {
+        "node": (
+            "package.json",
+            lambda deps: {
+                "name": root_dir,
+                "version": "1.0.0",
+                "dependencies": {dep: "*" for dep in deps},
+            },
+        ),
+        "python": ("requirements.txt", lambda deps: "\n".join(deps)),
+        "java": (
+            "pom.xml",
+            lambda deps: f"""<?xml version="1.0" encoding="UTF-8"?>
+                <project xmlns="http://maven.apache.org/POM/4.0.0">
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>{root_dir}</groupId>
+                    <artifactId>{root_dir}</artifactId>
+                    <version>1.0.0</version>
+                    <dependencies>
+                        {chr(10).join(f"        <dependency><groupId>{dep}</groupId><artifactId>{dep}</artifactId><version>LATEST</version></dependency>" for dep in deps)}
+                    </dependencies>
+                </project>""",
+        ),
     }
-    with open(os.path.join("output", root_dir, "package.json"), "w") as f:
-        json.dump(package_json, f, indent=2)
+
+    if target_language.lower() in dependency_files:
+        file_name, formatter = dependency_files[target_language.lower()]
+        deps_content = formatter(migration_plan["dependencies"])
+        deps_path = os.path.join("output", root_dir, file_name)
+
+        if isinstance(deps_content, str):
+            with open(deps_path, "w") as f:
+                f.write(deps_content)
+        else:
+            with open(deps_path, "w") as f:
+                json.dump(deps_content, f, indent=2)
 
     # Process each file in the code conversion mapping
     for source_file, target_info in tqdm(
@@ -41,9 +71,7 @@ def translate_code(migration_plan_text, target_language):
 
         source_code = target_info.get("code")
         if not source_code:
-            # Try to read the source code from the original file
             try:
-                # Remove any 'output' prefix from the path if it exists
                 actual_path = source_file.replace("output/", "").replace("output\\", "")
                 with open(actual_path, "r", encoding="utf-8") as f:
                     source_code = f.read()
@@ -55,11 +83,18 @@ def translate_code(migration_plan_text, target_language):
             response = client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=8000,
-                system="You are a code conversion expert. Convert the provided PHP code to the target language. Return only the converted code, no explanations.",
+                system=f"""You are a code conversion expert. Convert the provided {source_language} code to {target_language}. 
+                Follow these rules:
+                1. Return only the converted code, no explanations
+                2. Preserve all functionality exactly
+                3. Keep the same code structure where possible
+                4. Maintain all comments and documentation
+                5. Use idiomatic patterns in the target language
+                6. Handle language-specific features appropriately""",
                 messages=[
                     {
                         "role": "user",
-                        "content": f"Convert this PHP code to {target_language}:\n\n{source_code}",
+                        "content": f"Convert this {source_language} code to {target_language}:\n\n{source_code}",
                     }
                 ],
             )

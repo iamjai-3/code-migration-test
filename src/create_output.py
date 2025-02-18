@@ -39,30 +39,6 @@ def create_output_files(migration_plan_path):
         os.makedirs(full_path, exist_ok=True)
         print(f"Created directory: {full_path}")
 
-    # Create package.json if it's in the plan
-    if "package.json" in plan["projectStructure"]["files"]:
-        package_json = {
-            "name": root_dir,
-            "version": "1.0.0",
-            "description": plan["projectStructure"]["files"]["package.json"],
-            "main": next(
-                (
-                    f
-                    for f in plan["projectStructure"]["files"]
-                    if f.endswith("index.js")
-                ),
-                "",
-            ),
-            "scripts": {
-                "start": f"node {next((f for f in plan['projectStructure']['files'] if f.endswith('index.js')), '')}"
-            },
-            "dependencies": {dep: "*" for dep in plan.get("dependencies", [])},
-        }
-
-        with open(os.path.join(root_dir, "package.json"), "w") as f:
-            json.dump(package_json, f, indent=2)
-            print("Created package.json")
-
     # Create code files
     for source, info in plan["codeConversion"].items():
         if isinstance(info, dict) and "target" in info and "code" in info:
