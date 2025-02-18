@@ -1,56 +1,49 @@
 {
   "projectStructure": {
-    "root": "nodejs-api",
+    "root": "api_service",
     "folders": {
-      "src": {
-        "routes": {},
-        "controllers": {},
-        "models": {},
-        "data": {}
-      }
+      "api": {},
+      "data": {}
     },
     "files": {
-      "server.js": "Main application entry point",
-      "src/routes/itemRoutes.js": "Router definitions",
-      "src/controllers/itemController.js": "Request handlers",
-      "src/models/itemModel.js": "Data model",
-      "src/data/data.js": "Mock data store"
+      "main.py": "Main entry point",
+      "api/get_handler.py": "GET endpoint handler",
+      "api/post_handler.py": "POST endpoint handler",
+      "api/put_handler.py": "PUT endpoint handler",
+      "api/delete_handler.py": "DELETE endpoint handler",
+      "data/store.py": "Data storage module"
     }
   },
   "dependencies": [
-    "express",
-    "cors",
-    "body-parser",
-    "dotenv"
+    "flask==2.0.1",
+    "python-dotenv==0.19.0",
+    "werkzeug==2.0.1",
+    "jsonschema==3.2.0"
   ],
   "codeConversion": {
     "temp_extract/Php/index.php": {
-      "target": "src/server.js",
-      "code": "const express = require('express');\nconst cors = require('cors');\nconst bodyParser = require('body-parser');\nconst itemRoutes = require('./routes/itemRoutes');\n\nconst app = express();\n\napp.use(cors());\napp.use(bodyParser.json());\n\napp.use('/api/items', itemRoutes);\n\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n    console.log(`Server running on port ${PORT}`);\n});"
-    },
-    "temp_extract/Php/data/data.php": {
-      "target": "src/data/data.js",
-      "code": "const data = {\n    1: { id: 1, name: 'Item 1', description: 'Description of Item 1' },\n    2: { id: 2, name: 'Item 2', description: 'Description of Item 2' }\n};\n\nmodule.exports = data;"
+      "target": "api_service/main.py",
+      "code": "from flask import Flask, request, jsonify\nfrom api.get_handler import handle_get\nfrom api.post_handler import handle_post\nfrom api.put_handler import handle_put\nfrom api.delete_handler import handle_delete\n\napp = Flask(__name__)\n\n@app.route('/', methods=['GET', 'POST', 'PUT', 'DELETE'])\ndef handle_request():\n    if request.method == 'GET':\n        return handle_get()\n    elif request.method == 'POST':\n        return handle_post()\n    elif request.method == 'PUT':\n        return handle_put()\n    elif request.method == 'DELETE':\n        return handle_delete()\n    else:\n        return jsonify({'message': 'Method not allowed'}), 405\n\nif __name__ == '__main__':\n    app.run(debug=True)"
     },
     "temp_extract/Php/api/get.php": {
-      "target": "src/controllers/itemController.js",
-      "code": "const data = require('../data/data');\n\nconst getItems = (req, res) => {\n    const { id } = req.params;\n    if (id) {\n        if (data[id]) {\n            res.json(data[id]);\n        } else {\n            res.status(404).json({ message: 'Item not found' });\n        }\n    } else {\n        res.json(Object.values(data));\n    }\n};\n\nmodule.exports = { getItems };"
+      "target": "api_service/api/get_handler.py",
+      "code": "from flask import request, jsonify\nfrom data.store import data\n\ndef handle_get():\n    item_id = request.args.get('id')\n    if item_id:\n        item_id = int(item_id)\n        if item_id in data:\n            return jsonify(data[item_id])\n        return jsonify({'message': 'Item not found'}), 404\n    return jsonify(list(data.values()))"
     },
     "temp_extract/Php/api/post.php": {
-      "target": "src/controllers/itemController.js",
-      "code": "const createItem = (req, res) => {\n    const { name, description } = req.body;\n    const id = Object.keys(data).length + 1;\n    data[id] = {\n        id,\n        name,\n        description\n    };\n    res.status(201).json(data[id]);\n};\n\nmodule.exports = { getItems, createItem };"
+      "target": "api_service/api/post_handler.py",
+      "code": "from flask import request, jsonify\nfrom data.store import data\n\ndef handle_post():\n    input_data = request.get_json()\n    new_id = len(data) + 1\n    data[new_id] = {\n        'id': new_id,\n        'name': input_data['name'],\n        'description': input_data['description']\n    }\n    return jsonify(data[new_id])"
     },
     "temp_extract/Php/api/put.php": {
-      "target": "src/controllers/itemController.js",
-      "code": "const updateItem = (req, res) => {\n    const { id } = req.params;\n    if (!data[id]) {\n        return res.status(404).json({ message: 'Item not found' });\n    }\n    data[id] = {\n        ...data[id],\n        ...req.body\n    };\n    res.json(data[id]);\n};\n\nmodule.exports = { getItems, createItem, updateItem };"
+      "target": "api_service/api/put_handler.py",
+      "code": "from flask import request, jsonify\nfrom data.store import data\n\ndef handle_put():\n    input_data = request.get_json()\n    item_id = request.args.get('id')\n    \n    if not item_id:\n        return jsonify({'message': 'ID is required'}), 400\n        \n    item_id = int(item_id)\n    if item_id not in data:\n        return jsonify({'message': 'Item not found'}), 404\n        \n    data[item_id]['name'] = input_data.get('name', data[item_id]['name'])\n    data[item_id]['description'] = input_data.get('description', data[item_id]['description'])\n    \n    return jsonify(data[item_id])"
     },
     "temp_extract/Php/api/delete.php": {
-      "target": "src/controllers/itemController.js",
-      "code": "const deleteItem = (req, res) => {\n    const { id } = req.params;\n    if (!data[id]) {\n        return res.status(404).json({ message: 'Item not found' });\n    }\n    delete data[id];\n    res.json({ message: 'Item deleted' });\n};\n\nmodule.exports = { getItems, createItem, updateItem, deleteItem };"
+      "target": "api_service/api/delete_handler.py",
+      "code": "from flask import request, jsonify\nfrom data.store import data\n\ndef handle_delete():\n    item_id = request.args.get('id')\n    \n    if not item_id:\n        return jsonify({'message': 'ID is required'}), 400\n        \n    item_id = int(item_id)\n    if item_id not in data:\n        return jsonify({'message': 'Item not found'}), 404\n        \n    del data[item_id]\n    return jsonify({'message': 'Item deleted'})"
     },
-    "NEW_FILE": {
-      "target": "src/routes/itemRoutes.js",
-      "code": "const express = require('express');\nconst router = express.Router();\nconst { getItems, createItem, updateItem, deleteItem } = require('../controllers/itemController');\n\nrouter.get('/', getItems);\nrouter.get('/:id', getItems);\nrouter.post('/', createItem);\nrouter.put('/:id', updateItem);\nrouter.delete('/:id', deleteItem);\n\nmodule.exports = router;"
+    "temp_extract/Php/data/data.php": {
+      "target": "api_service/data/store.py",
+      "code": "data = {\n    1: {'id': 1, 'name': 'Item 1', 'description': 'Description of Item 1'},\n    2: {'id': 2, 'name': 'Item 2', 'description': 'Description of Item 2'}\n}"
     }
   }
 }
