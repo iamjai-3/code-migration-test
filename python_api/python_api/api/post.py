@@ -1,12 +1,12 @@
 from flask import request, jsonify
-from data.store import data
+from data.storage import data
 
-def handle_post():
+def handle():
     input_data = request.get_json()
-    new_id = len(data) + 1
-    data[new_id] = {
-        'id': new_id,
+    id = len(data) + 1
+    data[id] = {
+        'id': id,
         'name': input_data['name'],
         'description': input_data['description']
     }
-    return jsonify(data[new_id])
+    return jsonify(data[id])

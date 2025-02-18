@@ -1,15 +1,15 @@
 from flask import request, jsonify
-from data.store import data
+from data.storage import data
 
-def handle_delete():
-    item_id = request.args.get('id')
+def handle():
+    id = request.args.get('id')
     
-    if not item_id:
+    if not id:
         return jsonify({'message': 'ID is required'}), 400
         
-    item_id = int(item_id)
-    if item_id not in data:
+    id = int(id)
+    if id not in data:
         return jsonify({'message': 'Item not found'}), 404
         
-    del data[item_id]
+    del data[id]
     return jsonify({'message': 'Item deleted'})

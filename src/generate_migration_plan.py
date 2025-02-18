@@ -4,9 +4,6 @@ import anthropic
 import logging
 import time
 
-# Function to generate the migration plan using streaming API
-# This function should create a file-folder structure tree and list dependencies for the target language
-
 
 def generate_migration_plan(
     project_analysis, source_language, target_language, max_retries=3
@@ -76,7 +73,7 @@ def generate_migration_plan(
             time.sleep(2**retries)
 
     if retries == max_retries:
-        raise Exception("Failed to generate migration plan after maximum retries")
+        raise RuntimeError("Failed to generate migration plan after maximum retries")
 
     return migration_plan_text
 

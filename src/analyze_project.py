@@ -3,9 +3,6 @@ import anthropic
 import logging
 from tqdm import tqdm
 
-# Function to analyze the input project
-# This function should use the Anthropics API to understand the project structure and logic
-
 
 def analyze_project(project_path, input_language):
     api_key = os.getenv("ANTHROPIC_API_KEY")

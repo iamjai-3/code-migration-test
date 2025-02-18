@@ -4,9 +4,6 @@ import anthropic
 import logging
 from tqdm import tqdm
 
-# Function to translate the code using the Anthropics API
-# This function should translate the code without losing its context
-
 
 def translate_code(migration_plan_text, target_language):
     api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -17,44 +14,7 @@ def translate_code(migration_plan_text, target_language):
     code_conversion = migration_plan["codeConversion"]
     source_language = migration_plan.get("sourceLanguage", "Unknown")
 
-    # Create appropriate dependency file based on target language
     root_dir = project_structure["root"].lstrip("/")
-    dependency_files = {
-        "node": (
-            "package.json",
-            lambda deps: {
-                "name": root_dir,
-                "version": "1.0.0",
-                "dependencies": {dep: "*" for dep in deps},
-            },
-        ),
-        "python": ("requirements.txt", lambda deps: "\n".join(deps)),
-        "java": (
-            "pom.xml",
-            lambda deps: f"""<?xml version="1.0" encoding="UTF-8"?>
-                <project xmlns="http://maven.apache.org/POM/4.0.0">
-                    <modelVersion>4.0.0</modelVersion>
-                    <groupId>{root_dir}</groupId>
-                    <artifactId>{root_dir}</artifactId>
-                    <version>1.0.0</version>
-                    <dependencies>
-                        {chr(10).join(f"        <dependency><groupId>{dep}</groupId><artifactId>{dep}</artifactId><version>LATEST</version></dependency>" for dep in deps)}
-                    </dependencies>
-                </project>""",
-        ),
-    }
-
-    if target_language.lower() in dependency_files:
-        file_name, formatter = dependency_files[target_language.lower()]
-        deps_content = formatter(migration_plan["dependencies"])
-        deps_path = os.path.join("output", root_dir, file_name)
-
-        if isinstance(deps_content, str):
-            with open(deps_path, "w") as f:
-                f.write(deps_content)
-        else:
-            with open(deps_path, "w") as f:
-                json.dump(deps_content, f, indent=2)
 
     # Process each file in the code conversion mapping
     for source_file, target_info in tqdm(
