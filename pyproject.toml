@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "test-migration"
+version = "0.1.0"
+description = "Code migration tool"
+authors = ["Your Name"]
+readme = "README.md"
+packages = [{include = "src", from = "."}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+anthropic = "^0.45.2"
+tqdm = "^4.67.1"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+migrate = "test_migration.main:main"

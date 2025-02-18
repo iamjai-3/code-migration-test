@@ -12,12 +12,21 @@ def generate_migration_plan(project_analysis, target_language, max_retries=3):
     api_key = os.getenv("ANTHROPIC_API_KEY")  # Get API key from environment variable
     client = anthropic.Anthropic(api_key=api_key)
 
-    # Prepare the payload for the API request
+    # Build context with file contents
     context = ""
+    code_files = {}
     for file_info in project_analysis["files"]:
         file_path = file_info["file_path"]
         analysis = file_info["analysis"]
-        context += analysis + "\n"
+        try:
+            # Remove any 'output' prefix from the path if it exists
+            actual_path = file_path.replace("output/", "").replace("output\\", "")
+            with open(actual_path, "r", encoding="utf-8") as f:
+                code_files[file_path] = f.read()
+            context += f"File: {file_path}\n{analysis}\n\n"
+        except Exception as e:
+            logging.warning(f"Could not read file {file_path}: {str(e)}")
+            continue
 
     migration_plan_text = ""
     retries = 0
@@ -25,10 +34,32 @@ def generate_migration_plan(project_analysis, target_language, max_retries=3):
         try:
             with client.messages.stream(
                 max_tokens=8000,
+                system="""You are a code migration expert. Generate a migration plan that includes:
+                            1. Project structure with root, folders, and files
+                            2. Dependencies needed
+                            3. Code conversion mappings from PHP to Node.js
+                            Output must be valid JSON with the following structure which will be parsed into a python dict:
+                            {
+                            "projectStructure": {
+                                "root": string,
+                                "folders": {},
+                                "files": {}
+                            },
+                            "dependencies": [],
+                            "codeConversion": {
+                                "source_file_path": {
+                                "target": "target_file_path",
+                                "code": "original_source_code"
+                                }
+                            }
+                            }""",
                 messages=[
                     {
                         "role": "user",
-                        "content": f"{context}\nGenerate a migration plan for converting the above PHP project to a Node.js (Express) project. Include the file-folder structure and dependencies which will be directly converted into files. Ensure all code snippets are converted to Node.js (Express). The output should be a valid JSON with camelCase keys which will be parsed into python dictionary",
+                        "content": f"Generate a migration plan for converting this PHP project to Node.js (Express):\n\n{context}\n\nSource code for files:\n"
+                        + "\n".join(
+                            [f"{path}:\n{code}" for path, code in code_files.items()]
+                        ),
                     }
                 ],
                 model="claude-3-5-sonnet-20241022",
