@@ -8,26 +8,8 @@ A tool for migrating code between different programming languages.
 poetry install
 ```
 
-## Usage
-
-1. Set up your environment variables:
-
-   ```bash
-   cp .env.example .env
-   # Edit .env with your ANTHROPIC_API_KEY
-   ```
-
-2. Run the migration:
-   ```bash
-   poetry run migrate
-   ```
-
-## Development
+## Test command
 
 ```bash
-# Install dev dependencies
-poetry install --with dev
-
-# Run tests
-poetry run pytest
+python main.py
 ```

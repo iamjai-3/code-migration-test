@@ -1,0 +1,16 @@
+{
+  "name": "api-server",
+  "version": "1.0.0",
+  "description": "Project configuration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "*",
+    "body-parser": "*",
+    "cors": "*",
+    "dotenv": "*",
+    "morgan": "*"
+  }
+}

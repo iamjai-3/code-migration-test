@@ -4,26 +4,30 @@
     "folders": {
       "src": {
         "routes": {},
-        "controllers": {},
-        "data": {}
+        "data": {},
+        "controllers": {}
       }
     },
     "files": {
-      "index.js": "Server entry point",
-      "src/routes/api.js": "API routes",
-      "src/controllers/itemController.js": "CRUD controllers",
-      "src/data/data.js": "Data store"
+      "src/index.js": "Main application entry point",
+      "src/routes/items.js": "Router for item endpoints",
+      "src/controllers/itemController.js": "Controller logic for items",
+      "src/data/data.js": "Data store module",
+      "package.json": "Project configuration",
+      ".env": "Environment variables"
     }
   },
   "dependencies": [
     "express",
     "body-parser",
-    "cors"
+    "cors",
+    "dotenv",
+    "morgan"
   ],
   "codeConversion": {
     "temp_extract/Php/index.php": {
       "target": "src/index.js",
-      "code": "const express = require('express');\nconst bodyParser = require('body-parser');\nconst cors = require('cors');\nconst apiRoutes = require('./routes/api');\n\nconst app = express();\n\napp.use(cors());\napp.use(bodyParser.json());\n\napp.use('/api', apiRoutes);\n\napp.listen(3000, () => {\n  console.log('Server running on port 3000');\n});\n"
+      "code": "const express = require('express');\nconst bodyParser = require('body-parser');\nconst cors = require('cors');\nconst morgan = require('morgan');\nconst itemRoutes = require('./routes/items');\n\nconst app = express();\n\napp.use(cors());\napp.use(bodyParser.json());\napp.use(morgan('dev'));\n\napp.use('/api/items', itemRoutes);\n\napp.use((req, res) => {\n  res.status(405).json({ message: 'Method not allowed' });\n});\n\nconst PORT = process.env.PORT || 3000;\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});"
     },
     "temp_extract/Php/data/data.php": {
       "target": "src/data/data.js",
@@ -31,11 +35,11 @@
     },
     "temp_extract/Php/api/get.php": {
       "target": "src/controllers/itemController.js",
-      "code": "const { data } = require('../data/data');\n\nconst getItems = (req, res) => {\n  const { id } = req.query;\n  if (id) {\n    const item = data[parseInt(id)];\n    if (item) {\n      res.json(item);\n    } else {\n      res.status(404).json({ message: 'Item not found' });\n    }\n  } else {\n    res.json(Object.values(data));\n  }\n};\n\nconst createItem = (req, res) => {\n  const { name, description } = req.body;\n  const id = Object.keys(data).length + 1;\n  data[id] = { id, name, description };\n  res.status(201).json(data[id]);\n};\n\nconst updateItem = (req, res) => {\n  const { id } = req.query;\n  if (id && data[parseInt(id)]) {\n    const { name, description } = req.body;\n    data[id] = {\n      ...data[id],\n      name: name || data[id].name,\n      description: description || data[id].description\n    };\n    res.json(data[id]);\n  } else {\n    res.status(404).json({ message: 'Item not found' });\n  }\n};\n\nconst deleteItem = (req, res) => {\n  const { id } = req.query;\n  if (id && data[parseInt(id)]) {\n    delete data[id];\n    res.json({ message: 'Item deleted' });\n  } else {\n    res.status(404).json({ message: 'Item not found' });\n  }\n};\n\nmodule.exports = {\n  getItems,\n  createItem,\n  updateItem,\n  deleteItem\n};"
+      "code": "const { data } = require('../data/data');\n\nconst getItems = (req, res) => {\n  const { id } = req.params;\n  \n  if (id) {\n    const item = data[parseInt(id)];\n    if (item) {\n      return res.json(item);\n    }\n    return res.status(404).json({ message: 'Item not found' });\n  }\n  \n  return res.json(Object.values(data));\n};\n\nconst createItem = (req, res) => {\n  const { name, description } = req.body;\n  const id = Object.keys(data).length + 1;\n  \n  data[id] = { id, name, description };\n  return res.status(201).json(data[id]);\n};\n\nconst updateItem = (req, res) => {\n  const { id } = req.params;\n  const { name, description } = req.body;\n  \n  if (!data[id]) {\n    return res.status(404).json({ message: 'Item not found' });\n  }\n  \n  data[id] = {\n    ...data[id],\n    name: name || data[id].name,\n    description: description || data[id].description\n  };\n  \n  return res.json(data[id]);\n};\n\nconst deleteItem = (req, res) => {\n  const { id } = req.params;\n  \n  if (!data[id]) {\n    return res.status(404).json({ message: 'Item not found' });\n  }\n  \n  delete data[id];\n  return res.json({ message: 'Item deleted' });\n};\n\nmodule.exports = {\n  getItems,\n  createItem,\n  updateItem,\n  deleteItem\n};"
     },
-    "temp_extract/Php/api/routes.php": {
-      "target": "src/routes/api.js",
-      "code": "const express = require('express');\nconst router = express.Router();\nconst {\n  getItems,\n  createItem,\n  updateItem,\n  deleteItem\n} = require('../controllers/itemController');\n\nrouter.get('/items', getItems);\nrouter.post('/items', createItem);\nrouter.put('/items', updateItem);\nrouter.delete('/items', deleteItem);\n\nmodule.exports = router;"
+    "temp_extract/Php/api/routes.js": {
+      "target": "src/routes/items.js",
+      "code": "const express = require('express');\nconst router = express.Router();\nconst {\n  getItems,\n  createItem,\n  updateItem,\n  deleteItem\n} = require('../controllers/itemController');\n\nrouter.get('/:id?', getItems);\nrouter.post('/', createItem);\nrouter.put('/:id', updateItem);\nrouter.delete('/:id', deleteItem);\n\nmodule.exports = router;"
     }
   }
 }
